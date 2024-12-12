@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMI Calculator</title>
+    <style>
+        /* Basic reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Set the background and font for the whole page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Main container styling */
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        /* Card container style */
+        #emiForm {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        /* Title styling */
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Label styling */
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-align: left;
+            color: #555;
+        }
+
+        /* Input styling */
+        input[type="date"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: #f9f9f9;
+        }
+
+        select {
+            appearance: none;
+            background-color: #fff;
+        }
+
+        /* Button styling */
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* EMI results container */
+        .emiResults {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .no-data {
+            text-align: center;
+            font-size: 16px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="emiForm">
+            <h1>EMI Calculator</h1>
+            <label>Booking Date: <input type="date" id="booking_date" required></label><br>
+            <label>Check-in Date: <input type="date" id="checkin_date" required></label><br>
+            <label>Amount: <input type="number" id="amount" required></label><br>
+            <label>Down Payment: <input type="number" id="down_payment"></label><br>
+            <label>Installment Type:
+                <select id="instalment_type" required>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Biweekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </label><br>
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div class="emiResults" id="emiResults">
+            <!-- <h1>EMI Schedule</h1> -->
+            <div class="no-data">No data available</div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('emiForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const data = {
+                booking_date: document.getElementById('booking_date').value,
+                checkin_date: document.getElementById('checkin_date').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                down_payment: parseFloat(document.getElementById('down_payment').value) || null,
+                instalment_type: document.getElementById('instalment_type').value,
+            };
+
+            const response = await fetch('http://localhost:3001/api/emi/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            
+            const emiResultsDiv = document.getElementById('emiResults');
+
+            if (result.data && result.data.length > 0) {
+                const table = `<table>
+                    <thead>
+                        <tr>
+                            <th>EMI Date</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${result.data.map(emi => `
+                            <tr>
+                                <td>${emi.emi_date}</td>
+                                <td>${emi.amount}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+                emiResultsDiv.innerHTML = table;
+            }else if(result.emi_available == false) {
+                emiResultsDiv.innerHTML = result.message;
+            }else if(result.error != undefined || result.error != ''){
+                emiResultsDiv.innerHTML = result.error;
+            }
+             else {
+                emiResultsDiv.innerHTML = '<div class="no-data">No data available</div>';
+            }
+        });
+    </script>
+</body>
+</html>
